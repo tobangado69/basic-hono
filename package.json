@@ -1,5 +1,5 @@
 {
-  "name": "my-app",
+  "name": "basic-hono",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
