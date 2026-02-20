@@ -5,75 +5,77 @@ import {prisma} from "../../utils/prisma.js"
 
 
 export const blogRouter = new Hono()
-    .get("/",async (c)=>{
-        const blogs = await prisma.blog.findMany()
-        return c.json(blogs)
-    })
-    .get("/:id",async (c)=> {
-        const blogId = c.req.param("id")
-        const blog = await prisma.blog.findUnique({
-            where : {
-                id:Number(blogId)
-            }
-        })
-        if(!blog){
-            return c.json({message:"Your Content is not found"},404)
+    .get("/", async (c) => {
+        try {
+            const blogs = await prisma.blog.findMany();
+            return c.json(blogs);
+        } catch (e) {
+            return c.json({ message: "Failed to fetch blogs" }, 500);
         }
-        return c.json(blog)
     })
-    .post("/",zValidator("json",createBlogSchema),async (c)=>{
-        const body = c.req.valid("json")
-
-        const newBlog = await prisma.blog.create ({
-            data : {
-                title : body.title,
-                content : body.content
+    .get("/:id", async (c) => {
+        try {
+            const blogId = c.req.param("id");
+            const blog = await prisma.blog.findUnique({
+                where: { id: Number(blogId) },
+            });
+            if (!blog) {
+                return c.json({ message: "Your Content is not found" }, 404);
             }
-        })
-        return c.json(newBlog,201)
+            return c.json(blog);
+        } catch (e) {
+            return c.json({ message: "Failed to fetch blog" }, 500);
+        }
+    })
+    .post("/", zValidator("json", createBlogSchema), async (c) => {
+        try {
+            const body = c.req.valid("json");
+            const newBlog = await prisma.blog.create({
+                data: { title: body.title, content: body.content },
+            });
+            return c.json(newBlog, 201);
+        } catch (e) {
+            return c.json({ message: "Failed to create blog" }, 500);
+        }
     })
     .patch("/:id", zValidator("json", updateBlogSchema), async (c) => {
-        const blogId = c.req.param("id");
-        const body = c.req.valid("json");
+        try {
+            const blogId = c.req.param("id");
+            const body = c.req.valid("json");
 
-        const blog = await prisma.blog.findUnique({
-            where: {
-            id: Number(blogId),
-            },
-        });
+            const blog = await prisma.blog.findUnique({
+                where: { id: Number(blogId) },
+            });
+            if (!blog) {
+                return c.json({ message: "Your Content is not found" }, 404);
+            }
 
-        if (!blog) {
-            return c.json({ message: "Your Content is not found" }, 404);
+            const updated = await prisma.blog.update({
+                where: { id: Number(blogId) },
+                data: body,
+            });
+            return c.json(updated);
+        } catch (e) {
+            return c.json({ message: "Failed to update blog" }, 500);
         }
-
-        const updated = await prisma.blog.update({
-            where: {
-            id: Number(blogId),
-            },
-            data: body,
-        });
-
-        return c.json(updated);
     })
 
     .delete("/:id", async (c) => {
-        const blogId = c.req.param("id");
+        try {
+            const blogId = c.req.param("id");
 
-        const blog = await prisma.blog.findUnique({
-            where: {
-            id: Number(blogId),
-            },
-        });
+            const blog = await prisma.blog.findUnique({
+                where: { id: Number(blogId) },
+            });
+            if (!blog) {
+                return c.json({ message: "Your Content is not found" }, 404);
+            }
 
-        if (!blog) {
-            return c.json({ message: "Your Content is not found" }, 404);
+            await prisma.blog.delete({
+                where: { id: Number(blogId) },
+            });
+            return c.json({ message: "Your Blog deleted successfully" });
+        } catch (e) {
+            return c.json({ message: "Failed to delete blog" }, 500);
         }
-
-        await prisma.blog.delete({
-            where: {
-            id: Number(blogId),
-            },
-        });
-
-        return c.json({ message: "Your Blog deleted successfully" });
     });
